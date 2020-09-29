@@ -1,5 +1,7 @@
 package requestExecutor;
 
+import requestValidator.RequestValidator;
+
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.time.LocalDate;
@@ -14,12 +16,14 @@ public class OutputStreamRequestExecutor implements RequestExecutor {
 
     final DateTimeFormatter dateFormatter;
     final PrintWriter writer;
+    final RequestValidator validator;
 
     List<WaitingTimelineHandler> items;
 
-    public OutputStreamRequestExecutor(OutputStream outputStream, String dateFormat) {
+    public OutputStreamRequestExecutor(OutputStream outputStream, String dateFormat, RequestValidator validator) {
         this.dateFormatter = DateTimeFormatter.ofPattern(dateFormat);
         this.writer = new PrintWriter(outputStream);
+        this.validator = validator;
         this.items = new ArrayList<>();
     }
 
@@ -41,22 +45,33 @@ public class OutputStreamRequestExecutor implements RequestExecutor {
         String[] queryParts = query.split(" ");
         String service = queryParts[1];
         String question = queryParts[2];
-        String requestType = queryParts[3];
-        String date = queryParts[4];
-        String time = queryParts[5];
+        char requestType = queryParts[3].charAt(0);
+        LocalDate date = LocalDate.parse(queryParts[4], dateFormatter);
+        int time = Integer.parseInt(queryParts[5]);
 
-        return new WaitingTimelineHandler(service, question, requestType.charAt(0), LocalDate.parse(date, dateFormatter), Integer.parseInt(time));
+        validate(service, question);
+        return new WaitingTimelineHandler(service, question, requestType, date, time);
     }
 
     private QueryHandler getQueryHandler(String query) {
         String[] queryParts = query.split(" ");
         String service = queryParts[1];
         String question = queryParts[2];
-        String requestType = queryParts[3];
+        char requestType = queryParts[3].charAt(0);
         String[] dates = queryParts[4].split("-");
         LocalDate startDate = LocalDate.parse(dates[0], dateFormatter);
         LocalDate endDate = dates.length==2 ? LocalDate.parse(dates[1], dateFormatter) : null;
 
-        return new QueryHandler(service, question, requestType.charAt(0), startDate, endDate);
+        validate(service, question);
+        return new QueryHandler(service, question, requestType, startDate, endDate);
+    }
+
+    private void validate(String service, String question) {
+        if (!validator.validateServices(service) ) {
+            throw new IllegalArgumentException("Unknown service " + service);
+        }
+        if (!validator.validateQuestions(question)) {
+            throw new IllegalArgumentException("Unknown question " + question);
+        }
     }
 }

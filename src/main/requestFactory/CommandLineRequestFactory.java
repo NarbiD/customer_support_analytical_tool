@@ -9,11 +9,11 @@ public class CommandLineRequestFactory implements RequestFactory {
 
     @Override
     public RequestReader createRequestReader() {
-        return null; // todo new InputStreamRequestReader(System.in);
+        return new InputStreamRequestReader(System.in);
     }
 
     @Override
     public RequestExecutor createRequestExecutor(String dateFormat) {
-        return null; // todo new OutputStreamRequestExecutor(System.out, dateFormat);
+        return new OutputStreamRequestExecutor(System.out, dateFormat);
     }
 }
